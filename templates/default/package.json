@@ -1,0 +1,17 @@
+{
+  "name": "cloesce-proj",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "cloesce compile && wrangler build",
+    "migrate": "wrangler d1 migrations apply db",
+    "start:dev": "wrangler dev --port 5000",
+    "start:web": "vite",
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
