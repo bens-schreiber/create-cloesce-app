@@ -3,6 +3,9 @@
   "description": "Create Cloesce App",
   "version": "0.0.1",
   "author": "Ben Schreiber <bpschreiber2003@gmail.com>",
+  "repository": {
+    "url": "https://github.com/bens-schreiber/create-cloesce-app"
+  },
   "scripts": {
     "build": "tsup src/cli.ts --minify",
     "dev": "tsup src/cli.ts --watch",
