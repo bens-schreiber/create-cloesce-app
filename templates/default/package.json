@@ -11,6 +11,18 @@
     "start:web": "vite",
     "test": "vitest"
   },
+  "dependencies": {
+    "cloesce": ">=0.1.0",
+    "wrangler": "^4.61.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260131.0",
+    "miniflare": "^4.20260128.0",
+    "vite-tsconfig-paths": "^6.0.5",
+    "vitest": "^4.0.18",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

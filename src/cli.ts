@@ -22,12 +22,10 @@ create('create-cloesce', {
   promptForLicense: false,
   promptForDescription: false,
   promptForEmail: false,
-  skipNpmInstall: true,
   defaultLicense: "UNLICENSED",
-  after: async ({ installNpmPackage, packageDir }) => {
-    fs.mkdirSync(resolve(packageDir, 'migrations')); // can't copy an empty dir for some reason, so create it here
-    await installNpmPackage('cloesce wrangler');
-    await installNpmPackage('@cloudflare/workers-types miniflare vite-tsconfig-paths vitest typescript vite', true);
+  after: async ({ packageDir }) => {
+    // can't copy an empty dir because NPM lame, so create it here
+    fs.mkdirSync(resolve(packageDir, 'migrations'));
   },
   caveat
 });
