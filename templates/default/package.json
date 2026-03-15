@@ -5,14 +5,14 @@
   "main": "index.js",
   "scripts": {
     "build": "cloesce compile && wrangler build",
-    "migrate:cloesce": "cloesce migrate",
+    "migrate:cloesce": "cloesce migrate db",
     "migrate:wrangler": "wrangler d1 migrations apply db",
     "start:dev": "wrangler dev --port 5000",
     "start:web": "vite",
     "test": "vitest"
   },
   "dependencies": {
-    "cloesce": ">=0.1.0",
+    "cloesce": ">=0.2.2",
     "wrangler": "^4.61.1"
   },
   "devDependencies": {
