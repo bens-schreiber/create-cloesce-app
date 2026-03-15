@@ -33,7 +33,10 @@ async function createTestEnv() {
       "condition" text NOT NULL,
       FOREIGN KEY ("weatherReportId") REFERENCES "WeatherReport" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
     );
-    CREATE TABLE IF NOT EXISTS "_cloesce_tmp" ("path" text PRIMARY KEY, "id" integer NOT NULL);
+    CREATE TABLE IF NOT EXISTS "_cloesce_tmp" (
+    "path" text PRIMARY KEY,
+    "primary_key" text NOT NULL
+    );
   `).run();
 
     return { env, orm: Orm.fromEnv(env) };

@@ -4,7 +4,6 @@ import { Weather } from "./src/data/models.cloesce";
 const config = defineConfig({
     srcPaths: ["./src/data"],
     workersUrl: "http://localhost:5000/api",
-    migrationsPath: "./customDir",
     wranglerConfigFormat: "jsonc",
 });
 
