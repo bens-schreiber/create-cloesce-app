@@ -65,13 +65,12 @@ describe("Miniflare Integration Tests", () => {
                     condition: "Sunny"
                 }]
             },
-            WeatherReport.withWeatherEntries
         );
 
         await report!.weatherEntries[0].uploadPhoto(env, testData as any);
 
         // Act
-        const weatherEntries = await orm.list(Weather, Weather.withPhoto);
+        const weatherEntries = await orm.list(Weather);
         const photo = weatherEntries[0].downloadPhoto();
 
         // Assert
