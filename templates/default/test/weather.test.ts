@@ -1,8 +1,8 @@
 import { Miniflare } from "miniflare";
 import { describe, test, expect, beforeAll } from "vitest";
-import { Orm, CloesceApp } from "cloesce/backend";
-import { cidl, constructorRegistry } from "@generated/workers";
-import { Weather, WeatherReport } from "@data/models.cloesce";
+import * as Cloesce from "@cloesce/backend.js";
+import { Weather } from "@api/main.js"
+import { cloesce } from "@cloesce/backend.js";
 
 async function createTestEnv() {
     const mf = new Miniflare({
@@ -19,62 +19,60 @@ async function createTestEnv() {
     // Run any necessary migrations
     // TODO: Does Cloudflare have a way to do this automatically in tests?
     await db.prepare(`
-    CREATE TABLE IF NOT EXISTS "WeatherReport" (
-      "id" integer PRIMARY KEY,
-      "title" text NOT NULL,
-      "description" text NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS "Weather" (
-      "id" integer PRIMARY KEY,
-      "weatherReportId" integer NOT NULL,
-      "dateTime" text NOT NULL,
-      "location" text NOT NULL,
-      "temperature" real NOT NULL,
-      "condition" text NOT NULL,
-      FOREIGN KEY ("weatherReportId") REFERENCES "WeatherReport" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-    );
-    CREATE TABLE IF NOT EXISTS "_cloesce_tmp" (
-    "path" text PRIMARY KEY,
-    "primary_key" text NOT NULL
-    );
+--- New Models
+CREATE TABLE IF NOT EXISTS "WeatherReport" (
+  "id" integer PRIMARY KEY,
+  "title" text NOT NULL,
+  "description" text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "Weather" (
+  "id" integer PRIMARY KEY,
+  "weatherReportId" integer NOT NULL,
+  "dateTime" text NOT NULL,
+  "location" text NOT NULL,
+  "temperature" integer NOT NULL,
+  "condition" text NOT NULL,
+  FOREIGN KEY ("weatherReportId") REFERENCES "WeatherReport" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+--- Cloesce Temporary Table
+CREATE TABLE IF NOT EXISTS "_cloesce_tmp" (
+  "path" text PRIMARY KEY,
+  "primary_key" text NOT NULL
+);
   `).run();
 
-    return { env, orm: Orm.fromEnv(env) };
+    return env;
 }
 
-// Cloesce must be initialized before utilizing any ORM features.
-// It takes in the generated Cloesce Interface Definition Language (CIDL)
-// and the generated constructor registry. Both may be imported from
-// "@generated/workers" as shown above.
-beforeAll(() => CloesceApp.init(cidl as any, constructorRegistry));
+// Cloesce must be initialied before any ORM operations can be performed.
+beforeAll(() => cloesce());
 
 // Here we will test our Cloesce models against a Miniflare environment.
 // This does not use any client stubs; it interacts directly with the Miniflare instance.
 describe("Miniflare Integration Tests", () => {
     test("Download a thumbnail", async () => {
         // Arrange
-        const { env, orm } = await createTestEnv();
+        const env = await createTestEnv();
         const testData = "test-data";
 
-        const report = await orm.upsert(
-            WeatherReport,
-            {
-                title: "Test Report",
-                description: "This is a test weather report.",
-                weatherEntries: [{
-                    dateTime: new Date(),
-                    location: "Test Location",
-                    temperature: 25,
-                    condition: "Sunny"
-                }]
-            },
-        );
+        const report = (await Cloesce.WeatherReport.save(env, {
+            title: "Test Report",
+            description: "This is a test weather report.",
+            weatherEntries: [{
+                dateTime: new Date(),
+                location: "Test Location",
+                temperature: 25,
+                condition: "Sunny"
+            }]
+        }))!;
 
-        await report!.weatherEntries[0].uploadPhoto(env, testData as any);
+        await new Weather().uploadPhoto(report.weatherEntries[0], env, testData as any);
 
         // Act
-        const weatherEntries = await orm.list(Weather);
-        const photo = weatherEntries[0].downloadPhoto();
+        const weatherEntries = (await Cloesce.Weather.DataSources.Default.list(env, 0, 100))!;
+        const photo = new Weather().downloadPhoto(weatherEntries[0]);
 
         // Assert
         expect(photo.ok).toBe(true);
