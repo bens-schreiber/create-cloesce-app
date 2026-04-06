@@ -1,4 +1,6 @@
-import { Weather, WeatherReport } from '@generated/client';
+// All client code is generated under `@cloesce/client.js`.
+// Be careful to not use any imports under `@cloesce/backend.js` in the client.
+import { Weather, WeatherReport } from '@cloesce/client.js';
 
 declare global {
     interface Window {
@@ -21,7 +23,10 @@ const showResult = (outputId: string, result: any) => {
 };
 
 window.listReports = async () => {
-    const result = await WeatherReport.LIST(null, null, null);
+    const result = await WeatherReport.$list({
+        lastSeen_id: 0,
+        limit: 100
+    })
     showResult('list-output', result);
 };
 
@@ -34,7 +39,7 @@ window.saveReport = async () => {
         return;
     }
 
-    const result = await WeatherReport.SAVE({ title, description });
+    const result = await WeatherReport.$save({ title, description });
     showResult('save-output', result);
 };
 
@@ -46,7 +51,9 @@ window.addWeatherEntry = async () => {
         return;
     }
 
-    const getResult = await WeatherReport.GET(reportId);
+    const getResult = await WeatherReport.$get({
+        id: reportId
+    });
     if (!getResult.ok) {
         showResult('entry-output', getResult);
         return;
@@ -61,7 +68,7 @@ window.addWeatherEntry = async () => {
         dateTime: getValue('entry-datetime') ? new Date(getValue('entry-datetime')) : new Date()
     };
 
-    const result = await WeatherReport.SAVE({
+    const result = await WeatherReport.$save({
         id: report.id,
         title: report.title,
         description: report.description,

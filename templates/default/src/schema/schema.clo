@@ -1,0 +1,102 @@
+// `env` describes the resources in a wrangler configuration that the API can access.
+// It does not replace the wrangler config, but does result in a generated version.
+env {
+    // The `d1` block describes all D1 database bindings
+    d1 { 
+        db 
+        // db2
+    }
+
+    // The `r2` block describes all R2 bucket bindings
+    r2 { 
+        bucket 
+        // bucket2
+    }
+}
+
+// If a model is to be stored in a D1 database as a table, it must be decorated with `[use <binding>]`
+// The `list`, `get`, and `save` operations are used to generate CRUD operations for the model.
+// Optionally, these tags can be combined, e.g. `[use db, list, get, save]`
+[use db]
+[use list, save, get]
+model WeatherReport {
+    // The `primary` block describes the primary key of the table.
+    // It can be composed of several fields. Any number of primary blocks can be defined,
+    // which all together make up one primary key.
+    primary {
+        id: int
+    }
+
+    // A `nav` block describes a relationship between two models.
+    // In this case, it is a one-to-many relationship between WeatherReport and Weather,
+    // where WeatherReport has many Weathers. 
+    //
+    // This works because the field `weatherReportId` in the Weather model is a foreign key that 
+    // references the `id` field in the WeatherReport model.
+    //
+    // This will resolve to a navigation field named `weatherEntries` in the WeatherReport model, 
+    //which is an array of Weather objects.
+    nav (Weather::weatherReportId) {
+        weatherEntries
+    }
+
+    // All fields that are not apart of a block are just regular fields in the table.
+    title: string
+    description: string
+}
+
+[use db]
+[use get, list, save]
+model Weather {
+    primary {
+        id: int
+    }
+
+    // A `foreign` block describes a one to one relationship between two models.
+    // It translates directly to a foreign key constraint in the database (`weatherReportId` references `id` in WeatherReport).
+    foreign (WeatherReport::id) {
+        weatherReportId
+
+        // A `nav` block inside a `foreign` block generates a navigation field,
+        // meaning the backend and client will have a WeatherReport object named `weatherReport` nested inside the Weather model.
+        nav { weatherReport }
+    }
+    
+    r2 (bucket, "weather/photos/{id}.jpg") {
+        photo
+    }
+
+    dateTime: date
+    location: string
+    temperature: int
+    condition: string
+}
+
+// An `api` block describes what endpoints must be implemented in the backend
+// and generated in the client. Many blocks can be defined, but they all together make up one API.
+//
+// All endpoints in Cloesce are HTTP endpoints.
+api Weather {
+    // If `self` is passed as an argument, it means the endpoint requires an
+    // instantiated Weather object to be hydrated on the backend before the endpoint can be executed.
+    //
+    // In this case, `uploadPhoto` accepts the Wrangler environment (dependency injected),
+    // and a stream (the photo to be uploaded).
+    post uploadPhoto(self, e: env, s: stream) -> void
+
+    // By default, Cloesce will hydrate a `self` instance with all 1:1, KV, R2,
+    // and the near side of 1:M/M:M relationships.
+    //
+    // To avoid overfetching, a `source` tag can be used on `self`, which uses the
+    // specified data source instead. In this case, `downloadPhoto` will only hydrate the `photo` field.
+    // (NOTE: The Weather table is always queried to hydrate columns, regardless of the source.)
+    get downloadPhoto([source R2Only] self) -> stream
+}
+
+// A `source` block describes a data souce that can be used throughout
+// a Cloesce program to hydrate and list models.
+//
+// In this case, the include tree has only the `photo` field of `Weather`.
+source R2Only for Weather {
+    include { photo }
+}

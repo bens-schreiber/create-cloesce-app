@@ -1,9 +1,9 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    "module": "ESNext",
+    "module": "node20",
     "target": "ES2020",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "types": [],
     "skipLibCheck": true,
 
@@ -15,10 +15,10 @@
     "emitDecoratorMetadata": true,
     "allowSyntheticDefaultImports": true,
     "paths": {
-      "@data/*": ["./src/data/*"],
-      "@generated/*": ["./.generated/*"],
+      "@api/*": ["./src/api/*"],
+      "@cloesce/*": ["./.cloesce/*"],
     },
     "outDir": "dist",
   },
-  "include": [".generated/*.ts", "src/**/*.ts", "test/**/*.ts"],
+  "include": [".cloesce/*.ts", "src/**/*.ts", "test/**/*.ts"],
 }

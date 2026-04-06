@@ -12,7 +12,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "cloesce": ">=0.2.2",
+    "cloesce": ">=0.3.0",
     "wrangler": "^4.61.1"
   },
   "devDependencies": {
