@@ -46,7 +46,6 @@ CREATE TABLE IF NOT EXISTS "_cloesce_tmp" (
     return env;
 }
 
-// Cloesce must be initialied before any ORM operations can be performed.
 beforeAll(() => cloesce());
 
 // Here we will test our Cloesce models against a Miniflare environment.

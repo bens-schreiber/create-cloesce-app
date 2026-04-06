@@ -11,7 +11,7 @@ import { HttpResult } from "cloesce";
 //
 // To implement an API route, simply extend the generated Api class.
 // If not implemented, the route will return a 501 Not Implemented error by default.
-class Weather extends Cloesce.Weather.Api {
+export class Weather extends Cloesce.Weather.Api {
     async uploadPhoto(self: Cloesce.Weather.Self, e: Cloesce.Env, s: CfReadableStream): Promise<void> {
         // All models have a `KeyFormat` namespace which provides utilities for generating
         // KV and R2 keys for that model.
