@@ -7,9 +7,11 @@ import fs from 'fs';
 const templateRoot = resolve(__dirname, '..', 'templates');
 
 const caveat = `
+Ensure cloesce has been installed (https://cloesce.pages.dev/ch1-1-installation).
+
 To build your Cloesce project, run:
-- npm run build
-- npm run migrate:cloesce Initial
+- cloesce compile
+- cloesce migrate --all Initial
 - npm run migrate:wrangler
 
 To start your Cloesce project in development mode, in seperate terminals, run:

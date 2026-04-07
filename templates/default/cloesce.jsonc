@@ -1,0 +1,15 @@
+{
+    // Every .clo and .cloesce file under these paths will be included in the generated client API
+    "src_paths": ["./src/schema"],
+
+    // When cloece compile is invoked, the generated client API
+    // will use this URL
+    //
+    // If you have multiple environments (e.g., dev, staging, prod), you can make
+    // multiple `cloesce.jsonc` files with their respective prefix `<env>.cloesce.jsonc` 
+    // and set the `workers_url` accordingly.
+    "workers_url": "http://localhost:5000/api",
+
+    // or "toml"
+    "wrangler_config_format": "jsonc"
+}
