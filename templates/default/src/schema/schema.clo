@@ -2,14 +2,14 @@
 // It does not replace the wrangler config, but does result in a generated version.
 env {
     // The `d1` block describes all D1 database bindings
-    d1 { 
-        db 
+    d1 {
+        db
         // db2
     }
-
+    
     // The `r2` block describes all R2 bucket bindings
-    r2 { 
-        bucket 
+    r2 {
+        bucket
         // bucket2
     }
 }
@@ -26,7 +26,7 @@ model WeatherReport {
     primary {
         id: int
     }
-
+    
     // A `nav` block describes a relationship between two models.
     // In this case, it is a one-to-many relationship between WeatherReport and Weather,
     // where WeatherReport has many Weathers. 
@@ -35,11 +35,11 @@ model WeatherReport {
     // references the `id` field in the WeatherReport model.
     //
     // This will resolve to a navigation field named `weatherEntries` in the WeatherReport model, 
-    //which is an array of Weather objects.
+    // which is an array of Weather objects.
     nav (Weather::weatherReportId) {
         weatherEntries
     }
-
+    
     // All fields that are not apart of a block are just regular fields in the table.
     title: string
     description: string
@@ -51,21 +51,24 @@ model Weather {
     primary {
         id: int
     }
-
+    
     // A `foreign` block describes a one to one relationship between two models.
     // It translates directly to a foreign key constraint in the database (`weatherReportId` references `id` in WeatherReport).
     foreign (WeatherReport::id) {
         weatherReportId
-
+        
+        
         // A `nav` block inside a `foreign` block generates a navigation field,
         // meaning the backend and client will have a WeatherReport object named `weatherReport` nested inside the Weather model.
-        nav { weatherReport }
+        nav {
+            weatherReport
+        }
     }
     
     r2 (bucket, "weather/photos/{id}.jpg") {
         photo
     }
-
+    
     dateTime: date
     location: string
     temperature: int
@@ -83,7 +86,7 @@ api Weather {
     // In this case, `uploadPhoto` accepts the Wrangler environment (dependency injected),
     // and a stream (the photo to be uploaded).
     post uploadPhoto(self, e: env, s: stream) -> void
-
+    
     // By default, Cloesce will hydrate a `self` instance with all 1:1, KV, R2,
     // and the near side of 1:M/M:M relationships.
     //
@@ -98,5 +101,7 @@ api Weather {
 //
 // In this case, the include tree has only the `photo` field of `Weather`.
 source R2Only for Weather {
-    include { photo }
+    include {
+        photo
+    }
 }
