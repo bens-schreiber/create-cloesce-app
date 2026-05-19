@@ -10,7 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "cloesce": ">=0.3.0",
+    "cloesce": ">=0.4.0",
     "wrangler": "^4.61.1"
   },
   "devDependencies": {

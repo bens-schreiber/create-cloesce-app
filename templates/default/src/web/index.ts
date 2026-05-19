@@ -23,10 +23,7 @@ const showResult = (outputId: string, result: any) => {
 };
 
 window.listReports = async () => {
-    const result = await WeatherReport.$list({
-        lastSeen_id: 0,
-        limit: 100
-    })
+    const result = await WeatherReport.$list(0, 100);
     showResult('list-output', result);
 };
 
@@ -51,9 +48,7 @@ window.addWeatherEntry = async () => {
         return;
     }
 
-    const getResult = await WeatherReport.$get({
-        id: reportId
-    });
+    const getResult = await WeatherReport.$get(reportId);
     if (!getResult.ok) {
         showResult('entry-output', getResult);
         return;
