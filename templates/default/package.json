@@ -1,28 +1,27 @@
 {
-  "name": "cloesce-proj",
+  "name": "examples-weather",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "migrate:wrangler": "wrangler d1 migrations apply db",
+    "migrate:wrangler": "wrangler d1 migrations apply Db",
     "start:dev": "wrangler dev --port 5000",
     "start:web": "vite",
     "test": "vitest"
   },
-  "dependencies": {
-    "cloesce": ">=0.4.0",
-    "wrangler": "^4.61.1"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260131.0",
-    "miniflare": "^4.20260128.0",
-    "vite-tsconfig-paths": "^6.0.5",
-    "vitest": "^4.0.18",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "cloesce": ">=0.5.0",
+    "wrangler": "^4.61.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250906.0",
+    "@cloudflare/vitest-pool-workers": "^0.16.15",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.10",
+    "vitest": "^4.0.18"
+  }
 }
