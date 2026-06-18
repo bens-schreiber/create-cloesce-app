@@ -1,108 +1,117 @@
-// `env` describes the resources in a wrangler configuration that the API can access.
-// It does not replace the wrangler config, but does result in a generated version.
-env {
-    // The `d1` block describes all D1 database bindings
-    d1 {
-        db
-        // db2
-    }
-    
-    // The `r2` block describes all R2 bucket bindings
-    r2 {
-        bucket
-        // bucket2
+// We are able to define any number of R2 bindings in our schema,
+// which are Cloudflare Workers S3-compatible object storage buckets.
+//
+// Each R2 binding compiles to both a Wrangler binding definition as well as
+// helper methods for interacting with the bucket at runtime.
+r2 Bucket {
+    // The "photos" template directly states:
+    // - "with this parameter, at this key, store a value"
+    photos(id: int) {
+        "weather/photos/{id}.jpg"
     }
 }
 
-// If a model is to be stored in a D1 database as a table, it must be decorated with `[use <binding>]`
-// The `list`, `get`, and `save` operations are used to generate CRUD operations for the model.
-[use db]
+// D1 is Cloudflares serverless SQL database. Define any number
+// of bindings in the schema under a `d1` block, which compiles to Wrangler bindings
+// and provides a basis for a Model to generate SQL tables for.
+d1 {
+    Db
+    // db2
+    // ...
+}
+
+// `WeatherReport` is specifically denoted as `for Db`, which means it can source
+// data from the `WeatherReport` table in the `Db` D1 database.
+//
+// Any Model can be annotated with a `crud` tag, which generates basic API
+// functionality for the specified methods.
+//
+// CRUD implementations always exist on the backend, but with the `crud` tag,
+// they are exposed to the client as well.
 [crud list, save, get]
-model WeatherReport {
-    // The `primary` block describes the primary key of the table.
-    // It can be composed of several fields. Any number of primary blocks can be defined,
-    // which all together make up one primary key.
+model WeatherReport for Db {
+    // Every SQLite database backed Model must have a 
+    // `primary` key block, directly translating to a PRIMARY KEY in the generated SQL table.
     primary {
         id: int
     }
-
-    // Define regular SQL columns under the `column` block.
+    
+    // Cloesce can model relationships between Models with a `nav` block,
+    // which states:
+    // - "`Weather` has `weatherReportId` which is an FK to myself, JOIN to me at runtime"
+    //
+    // This is an example of a 1:M relationship.
+    nav Weather::weatherReportId {
+        weatherEntries
+    }
+    
     column {
         title: string
         description: string
     }
-    
-    // A `nav` block describes a relationship between two models.
-    // In this case, it is a one-to-many relationship between WeatherReport and Weather,
-    // where WeatherReport has many Weathers. 
-    //
-    // This works because the field `weatherReportId` in the Weather model is a foreign key that 
-    // references the `id` field in the WeatherReport model.
-    //
-    // This will resolve to a navigation field named `weatherEntries` in the WeatherReport model, 
-    // which is an array of Weather objects.
-    nav (Weather::weatherReportId) {
-        weatherEntries
-    }
 }
 
-[use db]
 [crud get, list, save]
-model Weather {
+model Weather for Db {
     primary {
         id: int
     }
+    
+    // A Foreign Key block directly translates
+    // to a SQLite FOREIGN KEY constraint to the referenced table,
+    // and inherits the type of the referenced column (in this case, int).
+    foreign WeatherReport::id {
+        weatherReportId
+    }
 
+    // A navigation block can also be 1:1. This states:
+    // - "`Weather` has `weatherReportId` which is an FK to `WeatherReport`, JOIN to `WeatherReport` at runtime"
+    nav WeatherReport::id(weatherReportId) {
+        weatherReport
+    }
+    
+    // SQL isnt the only source of data for a Model. Reference an R2 binding
+    // with an `r2` block, which states:
+    // - "at runtime, this field is hydrated from the `photos` template of the `Bucket` R2 binding,
+    //   using my column `id` as the parameter"
+    r2 Bucket::photos(id) {
+        photo
+    }
+    
     column {
         dateTime: date
         location: string
         temperature: int
         condition: string
     }
-    
-    // A `foreign` block describes a one to one relationship between two models.
-    // It translates directly to a foreign key constraint in the database (`weatherReportId` references `id` in WeatherReport).
-    foreign (WeatherReport::id) {
-        weatherReportId
-        
-        // A `nav` block inside a `foreign` block generates a navigation field,
-        // meaning the backend and client will have a WeatherReport object named `weatherReport` nested inside the Weather model.
-        nav {
-            weatherReport
-        }
-    }
-    
-    r2 (bucket, "weather/photos/{id}.jpg") {
-        photo
-    }
 }
 
-// An `api` block describes what endpoints must be implemented in the backend
-// and generated in the client. Many blocks can be defined, but they all together make up one API.
-//
-// All endpoints in Cloesce are HTTP endpoints.
 api Weather {
-    // If `self` is passed as an argument, it means the endpoint requires an
-    // instantiated Weather object to be hydrated on the backend before the endpoint can be executed.
+    // This method translates to an HTTP POST endpoint at /Weather/:id/uploadPhoto, accepting a
+    // stream as the body of the request.
     //
-    // In this case, `uploadPhoto` accepts the Wrangler environment (dependency injected),
-    // and a stream (the photo to be uploaded).
-    [inject bucket]
+    // Because this method is marked as `self`, Cloesce will hydrate the respective `Weather` instance
+    // at runtime, allowing us to access all fields of the model.
+    //
+    // The `inject` tag allows us to specify any bindings we want access to in the implementation of this method.
+    // No other parameters will be injected at runtime, so we must specify all bindings we want to use.
+    [inject Bucket]
     post uploadPhoto(self, s: stream)
     
-    // By default, Cloesce will hydrate a `self` instance with all 1:1, KV, R2,
-    // and the near side of 1:M/M:M relationships.
+    // This method translates to an HTTP GET endpoint at /Weather/:id/downloadPhoto.
     //
-    // To avoid overfetching, a `source` tag can be used on `self`, which uses the
-    // specified data source instead. In this case, `downloadPhoto` will only hydrate the `photo` field.
-    // (NOTE: The Weather table is always queried to hydrate columns, regardless of the source.)
+    // Because this method is marked as `self`, Cloesce will hydrate the respective `Weather` instance.
+    // However, we don't need the entire Weather instance to download the photo-- just the `id`.
+    // To avoid unnecessary hydration, we can specify a `source` for this method, which states:
+    // - "for this method, hydrate `self` using this source instead of the default"
     get downloadPhoto([source R2Only] self) -> stream
 }
 
-// A `source` block describes a data souce that can be used throughout
-// a Cloesce program to hydrate and list models.
+// A Data Source block states:
+// - "for this method, only hydrate the specified fields, and ignore the rest"
 //
-// In this case, the include tree has only the `photo` field of `Weather`.
+// Only R2, KV, and Nav fields can be specified in the include tree. All scalar
+// fields are brought by default.
 source R2Only for Weather {
     include {
         photo

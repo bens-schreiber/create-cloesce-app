@@ -1,11 +1,9 @@
-// Here, we import the generated backend code, which includes all the types
-// defined in the `schema.clo` file
+// Import the generated backend code, which includes all the types defined in the
+// `schema.clo` file.
 import * as clo from "@cloesce/backend.js";
-import { CfReadableStream } from "@cloesce/backend.js";
 
 // The "cloesce" library provides basic types and utilities for building a Cloesce backend
 import { HttpResult } from "cloesce";
-
 
 // To implement the API routes of a model or service defined in `schema.clo`,
 // we can use the `impl` method on it's respective generated namespace.
@@ -15,11 +13,14 @@ import { HttpResult } from "cloesce";
 //
 // The only place where generated code should be directly used is in `impl` blocks like this.
 export const Weather = clo.Weather.impl({
-    async uploadPhoto(self, e, s: CfReadableStream) {
-        // All models have a `Key` namespace which provides utilities for generating
-        // KV and R2 keys for that model.
-        const key = this.Key.photo(self.id);
-        await e.bucket.put(key, s);
+    async uploadPhoto(self, env, stream) {
+        // At runtime, Cloesce "upgrades" the Cloudflare Environment (clo.CfEnv)
+        // to a "Cloesce Environment" (clo.Env) which includes helper methods for
+        // every binding defined in our schema.
+        //
+        // For example, the "photos" template in the "Bucket" R2 binding generates
+        // a helper for uploading files to R2, which we can call like this:
+        await env.Bucket.photos.put(self.id, stream);
     },
 
     downloadPhoto(self) {
@@ -29,43 +30,50 @@ export const Weather = clo.Weather.impl({
             return HttpResult.fail(404, "Photo not found");
         }
         return HttpResult.ok(200, self.photo.body);
-    }
+    },
 });
 
 // `WeatherReport` has no API routes defined.
 //
-// Instead of using the generated namespace directly, we can still create an implementation with `impl`
-// to avoid passing the generated code around the rest of our application.
+// Instead of using the generated namespace directly, (clo.X) create
+// an implementation with an empty object, which provides a cleaner interface for
+// the rest of the codebase.
 export const WeatherReport = clo.WeatherReport.impl({});
+
+
 
 export default {
     async fetch(request: Request, env: clo.Env): Promise<Response> {
-        // preflight
+        const cors = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        };
+
         if (request.method === "OPTIONS") {
-            return HttpResult.ok(200, undefined, {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            }).toResponse();
+            // A basic CORS preflight handler
+            return new Response(null, { headers: cors });
         }
 
-        // Run Cloesce app
-        const app = (await clo.cloesce())
-            .register(Weather);
+        // The `cloesce` function returns a `CloesceApp` instance,
+        // capable of routing an HTTP request to a model implementation.
+        //
+        // We register any implementations we want to use with `app.register()`.
+        const app = clo.cloesce(env);
+        app.register(Weather, WeatherReport);
 
-        const result = await app.run(request, env);
+        // The `app.run()` method will:
+        // 1. Parses the incoming request URL and matches it to a models method
+        // 2. Deserializes and validates the request body and parameters against the schema
+        // 3. Hydrates the model instance (if applicable)
+        // 4. Dispatches to the respective implementation method (e.g. `Weather.uploadPhoto()`)
+        // 5. Returns a Response with the result of the method, serialized according to the schema
+        const result = await app.run(request);
 
-        // attach CORS headers
-        result.headers.set("Access-Control-Allow-Origin", "*");
-        result.headers.set(
-            "Access-Control-Allow-Methods",
-            "GET, POST, PUT, DELETE, OPTIONS"
-        );
-        result.headers.set(
-            "Access-Control-Allow-Headers",
-            "Content-Type, Authorization"
-        );
-
+        // Set CORS headers on the response
+        for (const [key, value] of Object.entries(cors)) {
+            result.headers.set(key, value);
+        }
         return result;
-    }
+    },
 };
